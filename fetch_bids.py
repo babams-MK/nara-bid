@@ -4,6 +4,9 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 import requests
 
+# ▼ 아래 큰따옴표("") 안에 포털 미리보기에서 복사한 '요청URL'을 붙여넣으세요!
+MY_API_URL = "https://apis.data.go.kr/1230000/ad/BidPublicInfoService02/getBidPblancListInfoServc02"
+
 KST = timezone(timedelta(hours=9))
 now = datetime.now(KST)
 three_days_ago = now - timedelta(days=3)
@@ -12,8 +15,10 @@ raw_key = os.environ.get("DATA_GO_KR_KEY", "").strip()
 if not raw_key:
     raise RuntimeError("DATA_GO_KR_KEY 비밀키가 설정되지 않았습니다.")
 
-# Encoding/Decoding 어느 키를 저장했든 정상 작동하도록 자동 변환
 service_key = urllib.parse.unquote(raw_key)
+
+# 물음표(?) 뒤까지 통째로 붙여넣어도 자동으로 앞의 기본 주소만 깔끔하게 잘라냅니다
+clean_url = MY_API_URL.strip().split("?")[0]
 
 params = {
     "serviceKey": service_key,
@@ -25,34 +30,19 @@ params = {
     "type": "json",
 }
 
-endpoints = [
-    "https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc",
-    "https://apis.data.go.kr/1230000/BidPublicInfoService04/getBidPblancListInfoServc",
-]
+resp = requests.get(clean_url, params=params, timeout=30)
+print(f"응답 상태 코드: {resp.status_code}")
 
-data = None
-last_error = None
+try:
+    parsed = resp.json()
+except Exception:
+    raise RuntimeError(f"JSON 대신 다른 응답이 왔습니다 -> {resp.text[:400]}")
 
-for url in endpoints:
-    try:
-        resp = requests.get(url, params=params, timeout=30)
-        if resp.status_code == 200:
-            parsed = resp.json()
-            header = parsed.get("response", {}).get("header", {})
-            if header.get("resultCode") == "00":
-                data = parsed
-                print(f"수집 성공: {url}")
-                break
-            last_error = f"API 응답 오류: {header}"
-        else:
-            last_error = f"HTTP {resp.status_code}: {resp.text[:200]}"
-    except Exception as e:
-        last_error = str(e)
+header = parsed.get("response", {}).get("header", {})
+if header.get("resultCode") != "00":
+    raise RuntimeError(f"조달청 API 오류 응답 -> {header}")
 
-if data is None:
-    raise RuntimeError(f"조달청 API 호출 실패 -> {last_error}")
-
-body = data.get("response", {}).get("body", {})
+body = parsed.get("response", {}).get("body", {})
 raw_items = body.get("items", [])
 
 if isinstance(raw_items, dict):
