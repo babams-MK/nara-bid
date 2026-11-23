@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 # ▼ 아래 큰따옴표("") 안에 포털 미리보기에서 복사한 '요청URL'을 붙여넣으세요!
-MY_API_URL = "https://apis.data.go.kr/1230000/ad/BidPublicInfoService02/getBidPblancListInfoServc02"
+MY_API_URL = "https://apis.data.go.kr/1230000/ad/BidPublicInfoService02/getBidPblancListInfoServc02?serviceKey=4f7f12c8b4ccded866df10734ea15e0793b57a5df22c4167eeec25362570597c&pageNo=1&numOfRows=10&type=json&inqryDiv=1&inqryBgnDt=202611200000&inqryEndDt=202611232359&bidNtceNo=20200123183"
 
 KST = timezone(timedelta(hours=9))
 now = datetime.now(KST)
@@ -17,7 +17,7 @@ if not raw_key:
 
 service_key = urllib.parse.unquote(raw_key)
 
-# 물음표(?) 뒤까지 통째로 붙여넣어도 자동으로 앞의 기본 주소만 깔끔하게 잘라냅니다
+# 물음표(?) 뒤까지 통째로 붙여넣어도 앞의 기본 주소만 자동으로 추출합니다
 clean_url = MY_API_URL.strip().split("?")[0]
 
 params = {
@@ -31,6 +31,7 @@ params = {
 }
 
 resp = requests.get(clean_url, params=params, timeout=30)
+print(f"요청한 주소: {clean_url}")
 print(f"응답 상태 코드: {resp.status_code}")
 
 try:
