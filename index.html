@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나라장터 용역 입찰공고 모니터</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-light: #eff6ff;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --urgent: #dc2626;
+      --urgent-bg: #fef2f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    header h1 {
+      font-size: 1.35rem;
+      margin-bottom: 6px;
+    }
+    .status-bar {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .search-box {
+      flex: 1 1 260px;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+    }
+    select, button {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    select {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: var(--text);
+    }
+    .btn-refresh {
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+    }
+    .btn-refresh:hover { background: #1e40af; }
+    .summary {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bid-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bid-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .bid-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border-color: #cbd5e1;
+    }
+    .bid-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+    .badge {
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .badge-method {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .badge-urgent {
+      background: var(--urgent-bg);
+      color: var(--urgent);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .bid-title {
+      display: block;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      margin-bottom: 10px;
+      word-break: keep-all;
+    }
+    .bid-title:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+    .bid-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 6px 16px;
+      font-size: 0.88rem;
+      color: #334155;
+      background: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+    .meta-label {
+      color: var(--muted);
+      margin-right: 6px;
+    }
+    .price-text {
+      font-weight: 700;
+      color: #0f766e;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>나라장터 용역 입찰공고 모니터</h1>
+    <div class="status-bar">
+      <span id="updatedAt">업데이트 시간 불러오는 중...</span>
+      <span>• 30분마다 자동 수집</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="controls">
+    <input
+      type="text"
+      id="searchInput"
+      class="search-box"
+      placeholder="공고명, 발주기관, 지역 키워드 검색 (예: 측정, 전기, 유지관리...)"
+    />
+    <select id="sortSelect">
+      <option value="noticeDesc">최신 공고순</option>
+      <option value="closeAsc">마감 임박순</option>
+      <option value="priceDesc">금액 높은순</option>
+    </select>
+    <button class="btn-refresh" onclick="loadBids()">새로고침</button>
+  </div>
+
+  <div class="summary">
+    <span id="countText">공고를 불러오는 중입니다...</span>
+  </div>
+
+  <div id="bidList" class="bid-list"></div>
+</main>
+
+<script>
+  let allBids = [];
+
+  function formatPrice(raw) {
+    const num = Number(String(raw || "0").replace(/[^0-9.-]/g, ""));
+    if (!num || num <= 0) return "금액 미정/별도확인";
+    return num.toLocaleString("ko-KR") + "원";
+  }
+
+  function isUrgent(closeDateStr) {
+    if (!closeDateStr) return false;
+    const clean = closeDateStr.replace(/[^0-9]/g, "");
+    if (clean.length < 12) return false;
+    const y = Number(clean.slice(0, 4));
+    const m = Number(clean.slice(4, 6)) - 1;
+    const d = Number(clean.slice(6, 8));
+    const hh = Number(clean.slice(8, 10));
+    const mm = Number(clean.slice(10, 12));
+    const closeTime = new Date(y, m, d, hh, mm).getTime();
+    const diffHours = (closeTime - Date.now()) / (1000 * 60 * 60);
+    return diffHours > 0 && diffHours <= 48;
+  }
+
+  function renderBids() {
+    const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+    const sortType = document.getElementById("sortSelect").value;
+
+    let filtered = allBids.filter(b => {
+      if (!keyword) return true;
+      const target = `${b.title} ${b.agency} ${b.method} ${b.bidNo}`.toLowerCase();
+      return keyword.split(/\s+/).every(word => target.includes(word));
+    });
+
+    filtered.sort((a, b) => {
+      if (sortType === "closeAsc") {
+        return (a.closeDate || "9999").localeCompare(b.closeDate || "9999");
+      }
+      if (sortType === "priceDesc") {
+        return Number(b.price || 0) - Number(a.price || 0);
+      }
+      return (b.noticeDate || "").localeCompare(a.noticeDate || "");
+    });
+
+    document.getElementById("countText").textContent =
+      `검색 결과: 총 ${filtered.length}건 (전체 수집 ${allBids.length}건)`;
+
+    const listEl = document.getElementById("bidList");
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="empty-state">조건에 맞는 입찰공고가 없습니다.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(b => {
+      const urgentTag = isUrgent(b.closeDate)
+        ? `<span class="badge-urgent">마감 임박</span>`
+        : "";
+      const linkUrl = b.url || "https://www.g2b.go.kr";
+      return `
+        <article class="bid-card">
+          <div class="bid-top">
+            <span class="badge">${b.bidNo || "공고번호 없음"}</span>
+            ${b.method ? `<span class="badge-method">${b.method}</span>` : ""}
+            ${urgentTag}
+          </div>
+          <a class="bid-title" href="${linkUrl}" target="_blank" rel="noopener noreferrer">
+            ${b.title || "(제목 없음)"}
+          </a>
+          <div class="bid-meta">
+            <div><span class="meta-label">발주기관</span><strong>${b.agency || "-"}</strong></div>
+            <div><span class="meta-label">추정/배정액</span><span class="price-text">${formatPrice(b.price)}</span></div>
+            <div><span class="meta-label">공고일시</span>${b.noticeDate || "-"}</div>
+            <div><span class="meta-label">입찰마감</span>${b.closeDate || "-"}</div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  async function loadBids() {
+    try {
+      const res = await fetch(`./bids.json?t=${Date.now()}`);
+      if (!res.ok) throw new Error("데이터 파일을 불러오지 못했습니다.");
+      const data = await res.json();
+      allBids = data.bids || [];
+      document.getElementById("updatedAt").textContent =
+        `최근 수집: ${data.updatedAt || "알 수 없음"}`;
+      renderBids();
+    } catch (err) {
+      document.getElementById("bidList").innerHTML =
+        `<div class="empty-state">데이터를 불러오는 중 오류가 발생했습니다: ${err.message}</div>`;
+    }
+  }
+
+  document.getElementById("searchInput").addEventListener("input", renderBids);
+  document.getElementById("sortSelect").addEventListener("change", renderBids);
+
+  loadBids();
+</script>
+</body>
+</html>
